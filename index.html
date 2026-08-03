@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bryan Shum — UX / Product Design</title>
+    <meta name="description" content="Bryan Shum is a UX/Product design student working at the intersection of cognitive science and interaction design.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/main.js" defer></script>
+  </head>
+
+  <body>
+    <header class="site-header">
+      <nav class="nav">
+        <a href="index.html" class="nav-logo">
+          <span class="logo-name">Bryan Shum</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation">Menu</button>
+        <div class="nav-links" id="primary-navigation">
+          <a href="index.html" class="nav-link is-active">Home</a>
+          <a href="work.html" class="nav-link">Work</a>
+          <a href="about.html" class="nav-link">About</a>
+          <a href="contact.html" class="nav-link">Contact</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <canvas class="hero-canvas" id="heroCanvas" aria-hidden="true"></canvas>
+        <div class="hero-content container">
+          <span class="hero-eyebrow">Portfolio — 2026</span>
+          <h1 class="hero-title">Bryan Shum</h1>
+          <p class="hero-tagline">UX / UI Design Student</p>
+          <div class="hero-actions">
+            <a href="work.html" class="btn">View Work <span class="btn-arrow">→</span></a>
+            <a href="contact.html" class="btn">Get In Touch <span class="btn-arrow">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <div class="marquee">
+        <div class="marquee-track" id="marqueeTrack">
+          <div class="marquee-unit">
+            <span>UX Research</span><span class="marquee-sep">—</span>
+            <span>Interaction Design</span><span class="marquee-sep">—</span>
+            <span>Prototyping</span><span class="marquee-sep">—</span>
+            <span>Visual Design</span><span class="marquee-sep">—</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="section reveal">
+        <div class="container">
+          <div class="eyebrow">
+            <span class="eyebrow-tick"></span>
+            <span class="eyebrow-label">About</span>
+            <span class="eyebrow-line"></span>
+          </div>
+          <p class="section-lead">
+            A Cognitive Science and Interactive Arts &amp; Technology student designing
+            interfaces at the intersection of human behaviour and digital technology.
+          </p>
+          <div class="section-body">
+            <p>
+              I believe that by understanding how people perceive, process, and interact
+              with information, I can create interfaces that are visually compelling and
+              cognitively intuitive, merging research-based design methods with expressive
+              visual craft.
+            </p>
+          </div>
+          <div style="margin-top: var(--space-5);">
+            <a href="about.html" class="btn">More About Me <span class="btn-arrow">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-alt reveal">
+        <div class="container">
+          <div class="eyebrow">
+            <span class="eyebrow-tick"></span>
+            <span class="eyebrow-label">Approach</span>
+            <span class="eyebrow-line"></span>
+          </div>
+          <ul class="capability-list">
+            <li class="capability-item">
+              <span class="capability-index">01</span>
+              <span class="capability-name"><span class="capability-name-track"><span class="capability-name-line">Research</span><span class="capability-name-line" aria-hidden="true">Research</span></span></span>
+              <span class="capability-desc">Heuristic evaluation, think-aloud testing, and insight synthesis grounded in cognitive science.</span>
+            </li>
+            <li class="capability-item">
+              <span class="capability-index">02</span>
+              <span class="capability-name"><span class="capability-name-track"><span class="capability-name-line">Interaction</span><span class="capability-name-line" aria-hidden="true">Interaction</span></span></span>
+              <span class="capability-desc">Prototyping expressive, intuitive interfaces in Figma, ProtoPie, and UXPin.</span>
+            </li>
+            <li class="capability-item">
+              <span class="capability-index">03</span>
+              <span class="capability-name"><span class="capability-name-track"><span class="capability-name-line">Visual Design</span><span class="capability-name-line" aria-hidden="true">Visual Design</span></span></span>
+              <span class="capability-desc">Crafting cohesive visual systems with the Adobe Creative Suite.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section reveal work-spotlight-group">
+        <div class="container">
+          <div class="eyebrow">
+            <span class="eyebrow-tick"></span>
+            <span class="eyebrow-label">Selected Work</span>
+            <span class="eyebrow-name">— Stüssy Web Experience Redesign</span>
+            <span class="eyebrow-line"></span>
+          </div>
+
+          <a href="project-stussy.html" class="work-feature" data-cursor-hover>
+            <div class="work-feature-media">
+              <picture>
+                <source
+                  srcset="
+                    img/project-curated-outfits-400.WEBP 400w,
+                    img/project-curated-outfits-800.WEBP 800w,
+                    img/project-curated-outfits-1200.WEBP 1200w
+                  "
+                  sizes="100vw"
+                  type="image/WEBP"
+                >
+                <img
+                  src="img/project-curated-outfits-800.WEBP"
+                  alt="Curated outfit examples from the Stüssy web experience redesign"
+                  loading="lazy"
+                >
+              </picture>
+              <video muted loop playsinline preload="metadata" aria-hidden="true">
+                <source src="video/project-virtual-mannequin-video.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="work-feature-body">
+              <div class="work-feature-meta">Case Study — Web Usability &amp; Interaction Design</div>
+              <div>
+                <h3>Stüssy Web Experience Redesign</h3>
+                <p>
+                  An interactive web experience featuring a virtual mannequin tool, curated
+                  outfit examples, and a community gallery — helping newcomers to streetwear
+                  culture shop with confidence.
+                </p>
+                <span class="btn">View Case Study <span class="btn-arrow">→</span></span>
+              </div>
+            </div>
+          </a>
+
+          <div class="work-more">More Work — Coming Soon</div>
+        </div>
+      </section>
+
+      <section class="section reveal">
+        <div class="container">
+          <div class="closing-band">
+            <p class="closing-text">Let's create something impactful.</p>
+            <div style="margin-top: var(--space-5);">
+              <a href="contact.html" class="btn">Get In Touch <span class="btn-arrow">→</span></a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-row">
+        <span>© 2026 Bryan Shum</span>
+        <div class="footer-links">
+          <a href="mailto:bcshum@sfu.ca">Email</a>
+          <a href="#">LinkedIn</a>
+          <a href="#">GitHub</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
