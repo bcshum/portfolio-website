@@ -264,13 +264,20 @@
        in size — a real continuous shape has to BE one path.
      - A single constant-width stroke fixed the seams but can't taper.
      - A straight-edged tapered polygon (the very first "ribbon") tapered
-       fine but looked choppy — because its edges were straight lineTo
-       segments between offset points, not because tapering itself is
-       the problem.
-     So: one filled polygon (no seams), built from the path's left/right
-     perpendicular offsets, where BOTH edges are smoothed with the same
-     quadratic-through-midpoints curve technique used for the centerline
-     — and the offset width varies per point for a real taper. */
+       fine but looked choppy — straight lineTo edges, not tapering
+       itself, was the problem.
+     - Densely linear-interpolating between raw mouse samples and then
+       smoothing that was a dead end: the interpolated points are
+       genuinely straight (that's what linear interpolation means), and
+       a local smoothing pass only reaches a few points either side of
+       each sample boundary — the bulk of every segment stayed
+       perfectly straight no matter how much smoothing was applied,
+       because there was no curvature in that data to begin with.
+     The actual fix: keep the RAW (sparse) mouse samples only, and fit a
+     Catmull-Rom spline through them for rendering. A spline uses each
+     point's neighbors to determine how the curve bends, so it's
+     genuinely curved everywhere — never straight — regardless of how
+     far apart two real samples were. */
   function initLiquidCursor() {
     if (!window.matchMedia('(pointer: fine)').matches) return;
 
@@ -290,19 +297,20 @@
     var baseRadius = 25;
     var scaleFactor = 1;
     var maxAge = 260; // ms — how long the trail is / how fast it retracts at rest
-    var pointSpacing = 8; // px between interpolated points along the path
+    var rawSpacing = 40; // px — coarse anchor points for the spline's context, NOT fine sub-pixel interpolation
+    var samplesPerSegment = 8; // curve points generated between each pair of raw anchors, for render smoothness
     var mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
-    var history = [{ x: mouseX, y: mouseY, born: performance.now() }]; // [0] = oldest (tail), [last] = newest (head)
+    var raw = [{ x: mouseX, y: mouseY, born: performance.now() }]; // sparse REAL points only; [0]=oldest, [last]=newest
 
     window.addEventListener('pointermove', function (e) {
       var now = performance.now();
-      var last = history[history.length - 1];
+      var last = raw[raw.length - 1];
       var dx = e.clientX - last.x, dy = e.clientY - last.y;
       var dist = Math.sqrt(dx * dx + dy * dy);
-      var steps = Math.max(1, Math.min(60, Math.round(dist / pointSpacing)));
+      var steps = Math.max(1, Math.min(15, Math.round(dist / rawSpacing)));
       for (var i = 1; i <= steps; i++) {
         var t = i / steps;
-        history.push({ x: last.x + dx * t, y: last.y + dy * t, born: now });
+        raw.push({ x: last.x + dx * t, y: last.y + dy * t, born: now });
       }
       mouseX = e.clientX;
       mouseY = e.clientY;
@@ -318,12 +326,40 @@
     }
     bindHoverables();
 
+    function catmullRomPoint(p0, p1, p2, p3, t) {
+      var t2 = t * t, t3 = t2 * t;
+      return {
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
+        born: p1.born + (p2.born - p1.born) * t
+      };
+    }
+
+    // Turns the sparse raw anchor points into a dense, genuinely curved
+    // point sequence for rendering — this replaces both the old linear
+    // sub-interpolation AND the moving-average smoothing pass.
+    function buildSplinePoints(rawPts, perSegment) {
+      var n = rawPts.length;
+      if (n < 2) return rawPts.slice();
+      var out = [];
+      for (var i = 0; i < n - 1; i++) {
+        var p0 = rawPts[Math.max(0, i - 1)];
+        var p1 = rawPts[i];
+        var p2 = rawPts[i + 1];
+        var p3 = rawPts[Math.min(n - 1, i + 2)];
+        for (var s = 0; s < perSegment; s++) {
+          out.push(catmullRomPoint(p0, p1, p2, p3, s / perSegment));
+        }
+      }
+      out.push(rawPts[n - 1]); // exact final point — keeps the head pinned to the true cursor position
+      return out;
+    }
+
     // Traces a smooth curve through a sequence of points (quadratic
-    // curve through each pair's midpoint, so every original point acts
-    // as a curve control rather than a hard corner) and draws a proper
-    // curved final segment into the true last point instead of a
-    // straight lineTo — which is exactly what caused the visible corner
-    // right at the head in the previous version.
+    // curve through each pair's midpoint) and draws a proper curved
+    // final segment into the true last point instead of a straight
+    // lineTo. Applied on top of the already-curved spline points mostly
+    // just for extra polish at this point.
     function tracePath(pts, continuing) {
       var n = pts.length;
       if (continuing) ctx.lineTo(pts[0].x, pts[0].y);
@@ -338,42 +374,14 @@
       ctx.quadraticCurveTo(prev.x, prev.y, last.x, last.y);
     }
 
-    // Consecutive points generated from a single fast pointermove jump
-    // are linearly interpolated — genuinely straight, since there's no
-    // way to know the true curvature the physical mouse took between two
-    // sampled events. tracePath() only rounds the corner AT each sample
-    // boundary, so long straight facets between samples stayed visibly
-    // straight (exactly the "bunch of straight lines" in the screenshot).
-    // A moving-average pass spreads each direction change out across
-    // several neighboring points instead of concentrating it at one
-    // joint, which is what actually makes the whole path read as curved.
-    function smoothPoints(pts, passes) {
-      var result = pts;
-      for (var p = 0; p < passes; p++) {
-        var n = result.length;
-        var next = new Array(n);
-        next[0] = result[0];
-        next[n - 1] = result[n - 1]; // keep tail and head anchored — head must stay at the true cursor position
-        for (var i = 1; i < n - 1; i++) {
-          next[i] = {
-            x: (result[i - 1].x + result[i].x * 2 + result[i + 1].x) / 4,
-            y: (result[i - 1].y + result[i].y * 2 + result[i + 1].y) / 4
-          };
-        }
-        result = next;
-      }
-      return result;
-    }
-
     function tick() {
       var now = performance.now();
-      while (history.length > 1 && now - history[0].born > maxAge) history.shift();
+      while (raw.length > 1 && now - raw[0].born > maxAge) raw.shift();
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#fff';
 
-      var n = history.length;
-      if (n < 4) {
+      if (raw.length < 2) {
         ctx.beginPath();
         ctx.arc(mouseX, mouseY, baseRadius * scaleFactor, 0, Math.PI * 2);
         ctx.fill();
@@ -381,7 +389,8 @@
         return;
       }
 
-      var pts = smoothPoints(history, 4);
+      var pts = buildSplinePoints(raw, samplesPerSegment);
+      var n = pts.length;
       var left = [], right = [], halfWidths = [];
       for (var i = 0; i < n; i++) {
         var p = pts[i];
@@ -393,7 +402,7 @@
         ty /= tlen;
         var px = -ty, py = tx;
 
-        var ageParam = 1 - i / (n - 1); // 0 at head (i=n-1), 1 at tail (i=0)
+        var ageParam = Math.min(1, (now - p.born) / maxAge); // 0 = fresh (head), 1 = about to expire (tail)
         var widthFactor = Math.max(0.12, Math.pow(1 - ageParam, 0.6)); // eased, small floor so the tip stays a soft round point, not a knife edge
         var hw = baseRadius * scaleFactor * widthFactor;
         halfWidths.push(hw);
