@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { Analytics } from '@vercel/analytics/react'
@@ -7,16 +8,26 @@ import { MenuProvider, useMenu } from './context/MenuContext'
 import SideMenu from './components/SideMenu'
 import Footer from './components/Footer'
 import GrainOverlay from './components/GrainOverlay'
-import DitherBackground from './components/DitherBackground'
 import LiquidCursor from './components/LiquidCursor'
 import InkTransition from './components/InkTransition'
 import InkTransitionSprite from './components/InkTransitionSprite'
 import SvgFilters from './components/SvgFilters'
-import Home from './pages/Home'
-import Work from './pages/Work'
-import ProjectStussy from './pages/ProjectStussy'
-import About from './pages/About'
-import Contact from './pages/Contact'
+
+/* Route-based code splitting: the single bundle was 918kB (258kB gzipped) —
+   every page's code plus every decorative effect's dependencies (three.js
+   for DitherBackground being the biggest) all had to download and parse
+   before the FIRST paint could happen, which is what a tied FCP/LCP of
+   3.27s in Speed Insights was actually measuring. Splitting each page into
+   its own chunk means only the current route's code blocks initial render;
+   the rest loads on navigation. DitherBackground is purely decorative (a
+   background layer, not core content), so it's deferred the same way —
+   three.js downloads after first paint instead of blocking it. */
+const Home = lazy(() => import('./pages/Home'))
+const Work = lazy(() => import('./pages/Work'))
+const ProjectStussy = lazy(() => import('./pages/ProjectStussy'))
+const About = lazy(() => import('./pages/About'))
+const Contact = lazy(() => import('./pages/Contact'))
+const DitherBackground = lazy(() => import('./components/DitherBackground'))
 
 function Layout({ children }) {
   const { open } = useMenu()
@@ -53,18 +64,22 @@ export default function App() {
             <SvgFilters />
             <SpeedInsights />
             <Analytics />
-            <DitherBackground />
+            <Suspense fallback={null}>
+              <DitherBackground />
+            </Suspense>
             <GrainOverlay />
             <LiquidCursor />
             <InkTransitionSprite />
             <InkTransition />
-            <Routes>
-              <Route path="/" element={<Layout><Home /></Layout>} />
-              <Route path="/work" element={<Layout><Work /></Layout>} />
-              <Route path="/work/stussy" element={<Layout><ProjectStussy /></Layout>} />
-              <Route path="/about" element={<Layout><About /></Layout>} />
-              <Route path="/contact" element={<Layout><Contact /></Layout>} />
-            </Routes>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route path="/" element={<Layout><Home /></Layout>} />
+                <Route path="/work" element={<Layout><Work /></Layout>} />
+                <Route path="/work/stussy" element={<Layout><ProjectStussy /></Layout>} />
+                <Route path="/about" element={<Layout><About /></Layout>} />
+                <Route path="/contact" element={<Layout><Contact /></Layout>} />
+              </Routes>
+            </Suspense>
           </MenuProvider>
         </ThemeProvider>
       </TransitionProvider>
