@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { ThemeProvider } from './context/ThemeContext'
 import { TransitionProvider } from './context/TransitionContext'
 import { MenuProvider, useMenu } from './context/MenuContext'
@@ -49,6 +50,7 @@ export default function App() {
             {/* Mounted once at the app root, outside <Routes>, so they persist
                 across navigation instead of remounting/flickering per page. */}
             <SvgFilters />
+            <SpeedInsights />
             <DitherBackground />
             <GrainOverlay />
             <LiquidCursor />
