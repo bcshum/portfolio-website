@@ -1,0 +1,940 @@
+@import "tailwindcss";
+
+/* ---------- Design tokens (ported from portfolio-website-v2/css/styles.css) ---------- */
+@theme {
+  --color-paper: #FDFBF7;
+  --color-paper-alt: #F5F2EB;
+  --color-ink: #1A1714;
+  --color-muted: #6B6359;
+  --color-faint: #9A8E86;
+  --color-accent: #C1272D;
+
+  --font-display: "Playfair Display", serif;
+  --font-body: "DM Mono", monospace;
+  --font-mono: "DM Mono", monospace;
+
+  --container-width: 72rem;
+}
+
+/* Plain custom properties (same names/values as the vanilla site) so the
+   component CSS below — copied close to verbatim from
+   portfolio-website-v2/css/styles.css — didn't need every var() renamed
+   to the Tailwind @theme token names above. */
+:root {
+  --bg: #FDFBF7;
+  --bg-alt: #F5F2EB;
+  --ink: #1A1714;
+  --muted: #6B6359;
+  --faint: #9A8E86;
+  --accent: #C1272D;
+  --divider: rgba(26, 23, 20, 0.1);
+  --divider-accent: rgba(193, 39, 45, 0.28);
+  /* Semi-transparent panel color behind .section-alt and the case-study
+     reading column — needs its own token (rather than reusing --bg-alt
+     directly) since it must stay translucent for the fixed grain layer to
+     read through, which a flat background color can't express. */
+  --overlay-alt: rgba(245, 242, 235, 0.68);
+
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Mono', monospace;
+  --font-mono: 'DM Mono', monospace;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+  --space-7: 4rem;
+  --space-8: 6rem;
+  --space-9: 8rem;
+
+  --container-w: 72rem;
+
+  /* Single source of truth for the side menu's footprint, shared between
+     SideMenu.jsx (the sliding panel's width) and App.jsx's Layout (the
+     page content's left padding) — defined once here so the two can never
+     drift out of sync with each other. */
+  --side-menu-closed-w: 6rem;
+  --side-menu-open-w: min(95vw, 36rem);
+}
+@media (min-width: 640px) {
+  :root {
+    --side-menu-closed-w: 8rem;
+  }
+}
+
+/* ---------- Dark theme ---------- */
+/* Ink-on-black variant matching the black/gold resume design, toggled via
+   ThemeContext setting data-theme="dark" on <html>. Overrides both the
+   Tailwind @theme tokens (so bg-paper/text-ink/text-accent utilities pick
+   it up automatically — Tailwind v4 utilities reference the CSS variable,
+   not a baked-in literal, so redefining it here is enough) and the plain
+   vars used by the ported component CSS below. */
+:root[data-theme='dark'] {
+  --color-paper: #0D0C0A;
+  --color-paper-alt: #17140F;
+  --color-ink: #F3EEE2;
+  --color-muted: #B9AF9C;
+  --color-faint: #6E6558;
+  --color-accent: #C9A227;
+
+  --bg: #0D0C0A;
+  --bg-alt: #17140F;
+  --ink: #F3EEE2;
+  --muted: #B9AF9C;
+  --faint: #6E6558;
+  --accent: #C9A227;
+  --divider: rgba(243, 238, 226, 0.12);
+  --divider-accent: rgba(201, 162, 39, 0.32);
+  --overlay-alt: rgba(23, 20, 15, 0.68);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body, h1, h2, h3, h4, p, figure, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, canvas { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; background: none; border: none; cursor: pointer; color: inherit; }
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+.container {
+  max-width: var(--container-w);
+  margin-inline: auto;
+  padding-inline: clamp(1.25rem, 4vw, 3rem);
+}
+
+/* ---------- Liquid cursor ---------- */
+.has-custom-cursor, .has-custom-cursor a, .has-custom-cursor button {
+  cursor: none;
+}
+
+/* ---------- Ink page transition (ported from the CodyHouse
+   "Ink Transition Effect" gem — see InkTransition.jsx / TransitionContext.jsx) ---------- */
+.ink-transition-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ink-transition-layer.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.ink-transition-svg {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.ink-transition-svg.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.ink-transition-svg__frame {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ink-ryan-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ink-ryan-layer.visible {
+  opacity: 1;
+  visibility: visible;
+}
+.ink-ryan-frame {
+  position: absolute;
+  inset: 0;
+  left: 50%;
+  width: 4000%;
+  height: 100%;
+  background: #fff;
+  -webkit-mask-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/204808/ink-transition-sprite.png');
+  mask-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/204808/ink-transition-sprite.png');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  transform: translateX(-1.25%);
+}
+.ink-ryan-layer.covered .ink-ryan-frame {
+  opacity: 1;
+  transform: translateX(-1.25%);
+}
+.ink-ryan-layer.revealing .ink-ryan-frame {
+  animation: ink-ryan-dispersal 1.3s steps(39) forwards;
+}
+.side-menu-shell-visible {
+  opacity: 1;
+  transform: translateX(0);
+  transition: none;
+}
+@keyframes ink-ryan-dispersal {
+  0% {
+    opacity: 1;
+    transform: translateX(-1.25%);
+  }
+  99% {
+    opacity: 1;
+    transform: translateX(-98.75%);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-98.75%);
+  }
+}
+.ink-bg-layer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateY(-50%) translateX(-2%);
+  height: 100%;
+  width: 2500%; /* sprite is 25 frames wide */
+  /* The sprite is a single flat fill color with the ink shape carried
+     entirely by its alpha channel, so it's used as a mask (not a
+     background-image) — that lets background-color set the ink's actual
+     on-screen color instead of being stuck with the sprite's own tint. */
+  background-color: #000;
+  -webkit-mask-image: url('/img/ink-sprite.png');
+  mask-image: url('/img/ink-sprite.png');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+.ink-transition-layer.opening .ink-bg-layer {
+  animation: ink-sequence 0.8s steps(24) forwards;
+}
+.ink-transition-layer.covered .ink-bg-layer {
+  transform: translateY(-50%) translateX(-98%);
+}
+.ink-transition-layer.closing .ink-bg-layer {
+  animation: ink-sequence-reverse 0.8s steps(24) forwards;
+}
+@keyframes ink-sequence {
+  0% { transform: translateY(-50%) translateX(-2%); }
+  100% { transform: translateY(-50%) translateX(-98%); }
+}
+@keyframes ink-sequence-reverse {
+  0% { transform: translateY(-50%) translateX(-98%); }
+  100% { transform: translateY(-50%) translateX(-2%); }
+}
+
+/* ---------- Spotlight dim (basement.studio-style hover highlight) ---------- */
+.is-dimmed {
+  opacity: 0.32;
+  transition: opacity 0.3s ease;
+}
+
+/* ---------- Section eyebrow ("SLabel") ---------- */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.eyebrow-tick {
+  width: 28px;
+  height: 2px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.eyebrow-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.eyebrow-line {
+  flex: 1;
+  height: 1px;
+  background: var(--divider);
+}
+.eyebrow-name {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.work-spotlight-group.is-work-active .eyebrow-name {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---------- Buttons / links ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid var(--accent);
+  transition: gap 0.2s ease, color 0.2s ease;
+}
+.btn:hover { gap: 1rem; color: var(--accent); }
+.btn-arrow { transition: transform 0.2s ease; }
+.btn:hover .btn-arrow { transform: translateX(3px); }
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--divider);
+}
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-content {
+  position: relative;
+  width: 100%;
+  padding-block: var(--space-8);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+  /* Same clamp() shape as .hero-title's margin-bottom below, on purpose —
+     both sides of the title use the literal same formula so the gap
+     above and below it stays equal at every viewport width, instead of a
+     flat --space-5 that read fine next to a 3.2rem title but
+     disproportionately tight next to a 9rem one. */
+  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
+  display: block;
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(3.2rem, 11vw, 9rem);
+  line-height: 0.95;
+  letter-spacing: 0.005em;
+  max-width: 20ch;
+  margin-bottom: clamp(1rem, 2.5vw, 1.75rem);
+}
+.hero-tagline {
+  font-family: var(--font-mono);
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  /* Spacing above now owned by .hero-title's own margin-bottom (proportional
+     to the title, which this element isn't) rather than double-defined
+     here too. */
+  margin-top: 0;
+}
+.hero-actions {
+  margin-top: var(--space-7);
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+/* ---------- Marquee ---------- */
+.marquee {
+  overflow: hidden;
+  border-bottom: 1px solid var(--divider);
+  padding-block: var(--space-4);
+  background: var(--bg-alt);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+.marquee-unit {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  gap: 2.5rem;
+  padding-right: 2.5rem;
+}
+.marquee-track span {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.6vw, 1.8rem);
+  white-space: nowrap;
+  color: var(--muted);
+}
+.marquee-track span.marquee-sep { color: var(--accent); }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ---------- Generic section ---------- */
+.section {
+  padding-block: var(--space-9);
+}
+.section-alt {
+  /* Transparent so the fixed grain layer behind everything still reads
+     through instead of being painted over by a flat opaque background. */
+  background: var(--overlay-alt);
+}
+.section-lead {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  line-height: 1.35;
+  max-width: 42ch;
+  margin-bottom: var(--space-6);
+}
+.section-body {
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+.section-body p + p { margin-top: var(--space-4); }
+
+/* ---------- Capability list ---------- */
+.capability-list { border-top: 1px solid var(--divider); }
+.capability-item {
+  display: grid;
+  grid-template-columns: 3rem 28rem 1fr;
+  align-items: center;
+  gap: var(--space-5);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--divider);
+  transition: padding-left 0.3s ease, opacity 0.3s ease;
+}
+.capability-item:hover { padding-left: var(--space-3); }
+.capability-item.is-dimmed { opacity: 0.32; }
+.capability-index {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--faint);
+  transition: color 0.3s ease;
+}
+.capability-item:hover .capability-index { color: var(--accent); }
+.capability-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 5.2vw, 4.2rem);
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  height: 1.35em;
+  line-height: 1.35;
+}
+.capability-name-track {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.capability-item:hover .capability-name-track {
+  transform: translateY(-50%);
+}
+.capability-name-line {
+  display: block;
+  line-height: 1.35;
+}
+.capability-desc {
+  color: var(--muted);
+  font-size: 0.95rem;
+  max-width: 42ch;
+}
+@media (max-width: 720px) {
+  .capability-item { grid-template-columns: 1fr; gap: var(--space-2); }
+}
+
+/* ---------- Work feature (single large project spread) ---------- */
+.work-feature {
+  display: block;
+}
+.work-feature-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+}
+.work-feature-media img {
+  width: 100%; height: 100%; object-fit: cover;
+  filter: grayscale(0.55);
+  transition: filter 0.5s ease, transform 0.6s ease;
+}
+.work-feature:hover .work-feature-media img,
+a.work-feature:focus-visible .work-feature-media img {
+  filter: grayscale(0);
+  transform: scale(1.02);
+}
+.work-feature-media video {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.work-feature:hover .work-feature-media video {
+  opacity: 1;
+}
+.work-feature-body {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: var(--space-7);
+  padding-top: var(--space-6);
+}
+.work-feature-meta {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.work-feature-body h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  margin-bottom: var(--space-3);
+}
+.work-feature-body p { color: var(--muted); margin-bottom: var(--space-5); max-width: 56ch; }
+
+@media (max-width: 720px) {
+  .work-feature-body { grid-template-columns: 1fr; gap: var(--space-3); }
+}
+
+.work-more {
+  margin-top: var(--space-8);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--divider);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* ---------- Case study grain-safe-zone panel: wider than the text column,
+   fades at its left/right edges via a mask, matching the HTML version. ---------- */
+.case-content {
+  position: relative;
+  isolation: isolate;
+}
+.case-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4rem;
+  right: -4rem;
+  bottom: -8rem;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--overlay-alt);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 90px, black calc(100% - 90px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 90px, black calc(100% - 90px), transparent);
+}
+.case-header { padding-block: var(--space-7) var(--space-6); border-bottom: 1px solid var(--divider); }
+.case-meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: var(--space-3);
+}
+.case-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  max-width: 20ch;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--space-6);
+  position: relative;
+  padding-bottom: var(--space-8);
+}
+.step:last-child { padding-bottom: 0; }
+.step-marker {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 1.2rem;
+}
+.step-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.step-num {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.step::before {
+  content: '';
+  position: absolute;
+  top: 1.2rem;
+  bottom: calc(-1 * var(--space-8) + 0.2rem);
+  left: 3px;
+  width: 1px;
+  background: var(--divider-accent);
+}
+.step:last-child::before { display: none; }
+.step-content h3 {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  margin-bottom: var(--space-3);
+}
+.step-content p { color: var(--muted); }
+.step-content p + p { margin-top: var(--space-3); }
+.step-content ul { margin-top: var(--space-3); }
+.step-content li {
+  position: relative;
+  padding-left: 1.4rem;
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+.step-content li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+.step-content em { color: var(--ink); font-style: italic; }
+.step-content strong { color: var(--ink); }
+
+.case-figure {
+  margin: var(--space-5) 0 var(--space-6);
+  border: 1px solid var(--divider);
+}
+.case-figure img, .case-figure video { width: 100%; }
+.case-figure figcaption {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--divider);
+  background: var(--bg-alt);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-7);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--divider);
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--divider);
+  padding: 0.5rem 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .step { grid-template-columns: 1fr; }
+  .step::before { display: none; }
+}
+
+/* ---------- Contact ---------- */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+}
+.contact-card {
+  padding: var(--space-5);
+  border: 1px solid var(--divider);
+  transition: border-color 0.2s ease, transform 0.2s ease, opacity 0.3s ease;
+  display: block;
+}
+.contact-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.contact-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+.contact-value {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+.closing-band {
+  margin-top: var(--space-9);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--divider);
+  text-align: center;
+}
+.closing-text {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+}
+
+/* ---------- Page hero (non-home pages) ---------- */
+.page-hero {
+  padding-block: var(--space-8) var(--space-6);
+  border-bottom: 1px solid var(--divider);
+}
+.page-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+}
+.page-hero p {
+  color: var(--muted);
+  max-width: 48ch;
+  margin-top: var(--space-3);
+}
+
+/* ---------- Side menu (Codrops "Letter Shuffle Menu" port) ---------- */
+/* The menu now uses the same DM Mono body font as the rest of the site.
+   The width/height rules below are structural (overflow clipping, flex
+   alignment), while JS still measures character widths so the reveal
+   stays tightly fitted and centered. */
+.side-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: clamp(3rem, 7.5vw, 5.5rem);
+  line-height: 0.9;
+  letter-spacing: 0.005em;
+  color: inherit;
+  opacity: 0.75;
+  transition: opacity 0.3s ease, color 0.3s ease, margin-left 0.3s ease;
+  padding-block: 0.1em;
+  /* Closed: clipped to exactly one letter cell, so the rest of each word
+     (opacity:0 but still occupying its own layout box) is neither visible
+     nor clickable — without this, the row is always as wide as the full
+     word regardless of open state. Open: unclipped, sized to the full
+     revealed word. Actual widths (both here and on the letter-wrap/reel
+     spans below) are set inline per-instance in JS. */
+  overflow: hidden;
+}
+.side-menu-item.is-closed {
+  opacity: 0.38;
+}
+.side-menu-item.is-hovered {
+  margin-left: var(--space-3);
+}
+.side-menu-item.is-dimmed {
+  opacity: 0.32;
+}
+.side-menu-item.is-highlighted {
+  opacity: 1;
+}
+.side-menu-item:hover,
+.side-menu-item:focus-visible,
+.side-menu-item--active {
+  opacity: 1;
+}
+/* Animated hover underline — accent color, so it's red in the light theme
+   and gold in dark (same token the active-page tick below already uses).
+   Scaled from 0 rather than transitioning width so the browser animates a
+   transform (cheap) instead of layout (width), and only shown in the open
+   state — in the closed single-letter rail it would just be a stray mark
+   under whichever letter happens to be hovered. */
+.side-menu-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0.06em;
+  width: 100%;
+  height: 0.045em;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+  pointer-events: none;
+}
+/* .is-hovered indents via margin-left (not padding-left — that property
+   turned out to be inert on this element for reasons that didn't trace
+   back to any normal CSS cascade issue; margin-left is confirmed to work).
+   Since it moves the whole box, this ::after moves right along with it —
+   no separate compensation needed. */
+.side-menu-item.is-closed::after {
+  display: none;
+}
+.side-menu-item:hover::after,
+.side-menu-item:focus-visible::after,
+.side-menu-item.is-hovered::after {
+  transform: scaleX(1);
+}
+.side-menu-item.is-closed:hover,
+.side-menu-item.is-closed:focus-visible,
+.side-menu-item.is-closed.side-menu-item--active {
+  opacity: 0.38;
+}
+.side-menu-item:hover .side-menu-word-track,
+.side-menu-item:focus-visible .side-menu-word-track,
+.side-menu-item.is-hovered .side-menu-word-track {
+  transform: translateY(-50%);
+}
+.side-menu-item:hover .side-menu-rest-char,
+.side-menu-item:focus-visible .side-menu-rest-char,
+.side-menu-item.is-hovered .side-menu-rest-char,
+.side-menu-item:hover .side-menu-reel > span,
+.side-menu-item:focus-visible .side-menu-reel > span,
+.side-menu-item.is-hovered .side-menu-reel > span {
+  color: currentColor;
+}
+/* Current-page marker in the site's actual accent color (rust in light
+   theme, gold in dark) — distinct from the hover/focus opacity bump above,
+   which is just interaction feedback, not a "you are here" indicator. */
+.side-menu-item--active::before {
+  content: '';
+  position: absolute;
+  left: -0.55em;
+  top: 50%;
+  translate: 0 -50%;
+  width: 0.16em;
+  height: 0.5em;
+  background: var(--accent);
+}
+.side-menu-letter-wrap {
+  /* Width is set inline per-instance in JS (measured glyph width) — this
+     is just the structural/clipping behavior. */
+  flex: none;
+  /* Slightly taller than the glyph box so the shuffle never clips while
+     animating. */
+  height: 1.05em;
+  overflow: hidden;
+  display: flex;
+  /* Top-aligns the (much taller) reel to this window, so untransformed
+     the window shows the reel's first slot — see the sign-direction note
+     in SideMenuItem.jsx. Using flex-end here was what silently flipped
+     which slot appeared at rest. */
+  align-items: flex-start;
+  /* Centered. The reel window's width is now a single value shared across
+     all four items (the widest letter that needs to fit in the current
+     state — see SideMenu.jsx), not each item measuring its own letter
+     independently, so centering here lines every item's glyph up around
+     the same shared midpoint rather than each item's own left edge —
+     reads as a properly aligned column instead of "each glyph
+     individually placed." */
+  justify-content: center;
+}
+.side-menu-word-window {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  height: 1.05em;
+}
+.side-menu-word-window.is-open {
+  height: 1.05em;
+}
+.side-menu-word-track {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.side-menu-word-row {
+  display: flex;
+  align-items: center;
+  height: 1.05em;
+}
+.side-menu-letter-wrap > span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none;
+}
+.side-menu-rest-char {
+  /* Without an explicit height, this span sizes to its natural
+     (shorter) line-height, while the reel's letter spans are pinned to
+     an explicit 1.05em (see below) — since both sit inside identically
+     positioned/sized .side-menu-letter-wrap windows with align-items:
+     flex-start, the shorter unset-height rest-char span ends up pinned
+     to the window's top instead of matching the reel span's vertical
+     centering, visibly offsetting the first letter from the rest of the
+     word (e.g. "W" sitting lower than "ork"). Matching the height here
+     fixes that. */
+  height: 1.05em;
+}
+.side-menu-reel > span {
+  /* Must exactly match .side-menu-letter-wrap's height — the reel's
+     translateY(-87.5%) is a percentage of the reel's OWN total height
+     (8 stacked spans), so it only lands precisely on a slot boundary if
+     each span's rendered height exactly equals the window's height.
+     Left to natural line-height, this was off by a few px per slot,
+     compounding across 7 slots into a visible partial-letter/blank gap
+     landing in the window instead of the intended revealed letter.
+     Centered (not bottom-aligned) so ascenders and descenders get equal
+     buffer room instead of the glyph being pushed toward one edge. */
+  height: 1.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.side-menu-reel {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+}
+.side-menu-tagline {
+  /* Kept on the mono font deliberately — this is a small tracked-out
+     label, the same role DM Mono already plays elsewhere on the site
+     (eyebrow labels, nav-style text), not a big display-text moment like
+     the item names themselves. */
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+/* Page content gets pushed over by the menu's actual width, rather than
+   the menu overlaying on top of unshifted content behind a dimming
+   backdrop — see App.jsx's Layout. */
+.side-menu-content {
+  padding-left: var(--side-menu-closed-w);
+  transition: padding-left 0.9s cubic-bezier(0.87, 0, 0.13, 1);
+}
+.side-menu-content--open {
+  padding-left: var(--side-menu-open-w);
+}
