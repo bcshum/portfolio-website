@@ -12,6 +12,13 @@
   --font-display: "Playfair Display", serif;
   --font-body: "DM Mono", monospace;
   --font-mono: "DM Mono", monospace;
+  /* Scoped to the side menu only (S/H/U/M + Home/Work/About/Contact).
+     Genuinely fixed-width, so the shared-cell-width closed rail (S/H/U/M
+     all sized to one shared column width) stays evenly aligned — Bodoni
+     Moda's Didone-level width variance broke that. Only ships a regular
+     weight (no real bold face), so .side-menu-item's font-weight is
+     dropped to 400 below to avoid a synthetic/faux-bold render. */
+  --font-side-menu: "Xanh Mono", monospace;
 
   --container-width: 72rem;
 }
@@ -34,6 +41,9 @@
      directly) since it must stay translucent for the fixed grain layer to
      read through, which a flat background color can't express. */
   --overlay-alt: rgba(245, 242, 235, 0.68);
+  --hero-art-image: url('/img/hero-shanshui-ink-light.png');
+  --hero-art-opacity: 0.42;
+  --hero-art-filter: none;
 
   --font-display: 'Playfair Display', serif;
   --font-body: 'DM Mono', monospace;
@@ -57,10 +67,12 @@
      drift out of sync with each other. */
   --side-menu-closed-w: 6rem;
   --side-menu-open-w: min(95vw, 36rem);
+  --side-menu-seal-w: 4rem;
 }
 @media (min-width: 640px) {
   :root {
     --side-menu-closed-w: 8rem;
+    --side-menu-seal-w: 5.5rem;
   }
 }
 
@@ -72,22 +84,37 @@
    not a baked-in literal, so redefining it here is enough) and the plain
    vars used by the ported component CSS below. */
 :root[data-theme='dark'] {
+  /* Neutral grays throughout, not the original warm/tan palette
+     (paper-alt, muted, faint, divider, overlay-alt all had a brown/cream
+     cast) — that warmth is what was reading as "brown" in places like the
+     footer. Ink is now pure white rather than the F3EEE2 cream. */
   --color-paper: #0D0C0A;
-  --color-paper-alt: #17140F;
-  --color-ink: #F3EEE2;
-  --color-muted: #B9AF9C;
-  --color-faint: #6E6558;
-  --color-accent: #C9A227;
+  --color-paper-alt: #161616;
+  --color-ink: #FFFFFF;
+  --color-muted: #A3A3A3;
+  --color-faint: #5C5C5C;
+  /* Brighter/more saturated than the light theme's rust (#C1272D) on
+     purpose — that hex is fairly dark and desaturated, so reused as-is
+     against this near-black background it read muddy and lost legibility
+     for small text uses (eyebrow labels, link underlines). A first pass at
+     #E8453A still read brownish (too much orange pulling the hue down at
+     low lightness on black) — this is a purer, more saturated scarlet
+     with no orange/yellow undertone, so it stays a clean red rather than
+     drifting brown. */
+  --color-accent: #FF3B30;
 
   --bg: #0D0C0A;
-  --bg-alt: #17140F;
-  --ink: #F3EEE2;
-  --muted: #B9AF9C;
-  --faint: #6E6558;
-  --accent: #C9A227;
-  --divider: rgba(243, 238, 226, 0.12);
-  --divider-accent: rgba(201, 162, 39, 0.32);
-  --overlay-alt: rgba(23, 20, 15, 0.68);
+  --bg-alt: #161616;
+  --ink: #FFFFFF;
+  --muted: #A3A3A3;
+  --faint: #5C5C5C;
+  --accent: #FF3B30;
+  --divider: rgba(255, 255, 255, 0.12);
+  --divider-accent: rgba(255, 59, 48, 0.32);
+  --overlay-alt: rgba(20, 20, 20, 0.68);
+  --hero-art-image: url('/img/hero-shanshui-ink-light.png');
+  --hero-art-opacity: 0.26;
+  --hero-art-filter: invert(1) grayscale(1) brightness(1.22) contrast(0.95);
 }
 
 html {
@@ -296,6 +323,7 @@ body {
 
 /* ---------- Buttons / links ---------- */
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -304,13 +332,103 @@ body {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink);
-  padding-bottom: 4px;
-  border-bottom: 1.5px solid var(--accent);
+  padding-bottom: 8px;
   transition: gap 0.2s ease, color 0.2s ease;
 }
 .btn:hover { gap: 1rem; color: var(--accent); }
+/* Hand-drawn brush-stroke underline instead of a straight border — a
+   mask-image (same technique as .ink-bg-layer above: the asset carries
+   only the shape via its alpha channel, background-color supplies the
+   actual on-screen color) so it recolors with the theme automatically,
+   same as the border it replaces did. The source SVG's path was generated
+   from a tapered-thickness envelope plus independent top/bottom jitter,
+   not hand-traced — see public/img/brush-underline.svg. */
+.btn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 7px;
+  background-color: var(--accent);
+  -webkit-mask-image: url('/img/brush-underline.svg');
+  mask-image: url('/img/brush-underline.svg');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  pointer-events: none;
+}
 .btn-arrow { transition: transform 0.2s ease; }
 .btn:hover .btn-arrow { transform: translateX(3px); }
+
+/* ---------- Brush-stroke dividers ---------- */
+/* Every full-width 1px hairline divider on the site, replaced the same way
+   as .btn's underline (mask-image + background-color so it still recolors
+   with --divider automatically) but with a REPEATING tile instead of one
+   stretched shape — a divider can span anywhere from a narrow card to the
+   full container width, and stretching a single fixed-detail brush texture
+   across an arbitrary width would flatten its roughness at wide widths.
+   A small seamless tile (public/img/brush-divider-tile.svg, generated from
+   periodic sine terms so its left/right edges match exactly) repeats at a
+   fixed on-screen size instead, so the texture density stays constant
+   regardless of how wide the element actually is. Position is only
+   distinguished by top:0 vs bottom:-1px per group below — box borders
+   (image frames, tag chips, contact cards) and the theme toggle's pill
+   outline are deliberately NOT included here, see the note further down. */
+.hero,
+.marquee,
+.capability-list,
+.capability-item,
+.work-more,
+.case-header,
+.case-figure figcaption,
+.tag-row,
+.closing-band,
+.page-hero,
+footer {
+  position: relative;
+}
+.hero::after,
+.marquee::after,
+.capability-list::after,
+.capability-item::after,
+.work-more::after,
+.case-header::after,
+.case-figure figcaption::after,
+.tag-row::after,
+.closing-band::after,
+.page-hero::after,
+footer::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background-color: var(--divider);
+  -webkit-mask-image: url('/img/brush-divider-tile.svg');
+  mask-image: url('/img/brush-divider-tile.svg');
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+  -webkit-mask-size: 48px 6px;
+  mask-size: 48px 6px;
+  pointer-events: none;
+}
+.work-more::after,
+.case-figure figcaption::after,
+.tag-row::after,
+.closing-band::after,
+.capability-list::after,
+footer::after {
+  top: -1px;
+}
+.hero::after,
+.marquee::after,
+.capability-item::after,
+.case-header::after,
+.page-hero::after {
+  bottom: -1px;
+}
 
 /* ---------- Hero ---------- */
 .hero {
@@ -319,19 +437,111 @@ body {
   display: flex;
   align-items: center;
   overflow: hidden;
-  border-bottom: 1px solid var(--divider);
 }
 .hero-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 0;
+}
+.hero-art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  background: var(--hero-art-image) center center / cover no-repeat;
+  opacity: var(--hero-art-opacity);
+  filter: var(--hero-art-filter);
+}
+.hero-mist {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: min(42vh, 24rem);
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.hero-mist-band {
+  position: absolute;
+  border-radius: 50%;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+.hero-mist-band--back {
+  left: -10%;
+  right: -10%;
+  bottom: -28%;
+  height: 82%;
+  background:
+    radial-gradient(ellipse at 20% 54%, rgba(104,104,104,0.44) 0%, rgba(104,104,104,0.18) 30%, rgba(104,104,104,0) 62%),
+    radial-gradient(ellipse at 76% 46%, rgba(84,84,84,0.4) 0%, rgba(84,84,84,0.16) 28%, rgba(84,84,84,0) 58%);
+  filter: blur(30px);
+  opacity: 0.44;
+  animation: hero-mist-drift-back 24s ease-in-out infinite alternate;
+}
+.hero-mist-band--mid {
+  left: -7%;
+  right: -7%;
+  bottom: -10%;
+  height: 54%;
+  background:
+    radial-gradient(ellipse at 14% 50%, rgba(78,78,78,0.64) 0%, rgba(78,78,78,0.26) 24%, rgba(78,78,78,0) 54%),
+    radial-gradient(ellipse at 46% 58%, rgba(64,64,64,0.58) 0%, rgba(64,64,64,0.24) 26%, rgba(64,64,64,0) 54%),
+    radial-gradient(ellipse at 84% 48%, rgba(56,56,56,0.54) 0%, rgba(56,56,56,0.22) 22%, rgba(56,56,56,0) 50%);
+  filter: blur(16px);
+  opacity: 0.68;
+  animation: hero-mist-drift-mid 13s ease-in-out infinite alternate;
+}
+.hero-mist-band--front {
+  left: -2%;
+  right: -2%;
+  bottom: 3%;
+  height: 28%;
+  background:
+    radial-gradient(ellipse at 26% 54%, rgba(52,52,52,0.54) 0%, rgba(52,52,52,0.18) 20%, rgba(52,52,52,0) 46%),
+    radial-gradient(ellipse at 68% 50%, rgba(40,40,40,0.5) 0%, rgba(40,40,40,0.16) 18%, rgba(40,40,40,0) 42%);
+  filter: blur(9px);
+  opacity: 0.62;
+  animation: hero-mist-drift-front 9s ease-in-out infinite alternate;
+}
+:root[data-theme='dark'] .hero-mist-band--back {
+  background:
+    radial-gradient(ellipse at 18% 50%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 28%, rgba(255,255,255,0) 58%),
+    radial-gradient(ellipse at 48% 54%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 32%, rgba(255,255,255,0) 62%),
+    radial-gradient(ellipse at 82% 44%, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 28%, rgba(255,255,255,0) 58%);
+}
+:root[data-theme='dark'] .hero-mist-band--mid {
+  background:
+    radial-gradient(ellipse at 12% 48%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 54%),
+    radial-gradient(ellipse at 38% 56%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 26%, rgba(255,255,255,0) 54%),
+    radial-gradient(ellipse at 66% 46%, rgba(255,255,255,0.23) 0%, rgba(255,255,255,0.08) 24%, rgba(255,255,255,0) 52%),
+    radial-gradient(ellipse at 92% 54%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.07) 20%, rgba(255,255,255,0) 50%);
+}
+:root[data-theme='dark'] .hero-mist-band--front {
+  background:
+    radial-gradient(ellipse at 22% 50%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.12) 22%, rgba(255,255,255,0) 50%),
+    radial-gradient(ellipse at 52% 58%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.11) 24%, rgba(255,255,255,0) 52%),
+    radial-gradient(ellipse at 84% 46%, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.1) 22%, rgba(255,255,255,0) 50%);
+}
+@keyframes hero-mist-drift-back {
+  from { transform: translate3d(-2%, 0, 0) scaleX(1); }
+  to { transform: translate3d(2%, -2%, 0) scaleX(1.04); }
+}
+@keyframes hero-mist-drift-mid {
+  from { transform: translate3d(2%, 0, 0) scaleX(1); }
+  to { transform: translate3d(-2.5%, -3%, 0) scaleX(1.03); }
+}
+@keyframes hero-mist-drift-front {
+  from { transform: translate3d(-1.5%, 0, 0) scaleX(1); }
+  to { transform: translate3d(2%, -4%, 0) scaleX(1.02); }
 }
 .hero-content {
   position: relative;
   width: 100%;
   padding-block: var(--space-8);
   pointer-events: none;
+  z-index: 0;
 }
 .hero-eyebrow {
   font-family: var(--font-mono);
@@ -348,7 +558,13 @@ body {
   display: block;
 }
 .hero-title {
-  font-family: var(--font-display);
+  /* "Noto Serif TC" fallback covers the Chinese-name state (岑卓徽) — Playfair
+     Display has no CJK glyphs. Deliberately NOT using var(--font-display)
+     here: that token already ends in a generic "serif" keyword, which
+     matches successfully for ANY glyph (including CJK) and would pre-empt
+     this fallback before the browser ever reaches it — so the specific
+     stack is spelled out directly instead. */
+  font-family: "Playfair Display", "Noto Serif TC", serif;
   font-weight: 700;
   font-size: clamp(3.2rem, 11vw, 9rem);
   line-height: 0.95;
@@ -378,7 +594,6 @@ body {
 /* ---------- Marquee ---------- */
 .marquee {
   overflow: hidden;
-  border-bottom: 1px solid var(--divider);
   padding-block: var(--space-4);
   background: var(--bg-alt);
 }
@@ -429,15 +644,27 @@ body {
 }
 .section-body p + p { margin-top: var(--space-4); }
 
+/* ---------- About ---------- */
+.about-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+}
+.about-lead {
+  max-width: 20ch;
+}
+.about-body {
+  max-width: 60ch;
+}
+
 /* ---------- Capability list ---------- */
-.capability-list { border-top: 1px solid var(--divider); }
 .capability-item {
   display: grid;
   grid-template-columns: 3rem 28rem 1fr;
   align-items: center;
   gap: var(--space-5);
   padding-block: var(--space-3);
-  border-bottom: 1px solid var(--divider);
   transition: padding-left 0.3s ease, opacity 0.3s ease;
 }
 .capability-item:hover { padding-left: var(--space-3); }
@@ -538,7 +765,6 @@ a.work-feature:focus-visible .work-feature-media img {
 .work-more {
   margin-top: var(--space-8);
   padding-top: var(--space-5);
-  border-top: 1px solid var(--divider);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.16em;
@@ -565,7 +791,7 @@ a.work-feature:focus-visible .work-feature-media img {
   -webkit-mask-image: linear-gradient(to right, transparent, black 90px, black calc(100% - 90px), transparent);
   mask-image: linear-gradient(to right, transparent, black 90px, black calc(100% - 90px), transparent);
 }
-.case-header { padding-block: var(--space-7) var(--space-6); border-bottom: 1px solid var(--divider); }
+.case-header { padding-block: var(--space-7) var(--space-6); }
 .case-meta {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -651,7 +877,6 @@ a.work-feature:focus-visible .work-feature-media img {
   text-transform: uppercase;
   color: var(--faint);
   padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--divider);
   background: var(--bg-alt);
 }
 
@@ -661,7 +886,6 @@ a.work-feature:focus-visible .work-feature-media img {
   gap: var(--space-3);
   margin-top: var(--space-7);
   padding-top: var(--space-6);
-  border-top: 1px solid var(--divider);
 }
 .tag {
   font-family: var(--font-mono);
@@ -706,7 +930,6 @@ a.work-feature:focus-visible .work-feature-media img {
 .closing-band {
   margin-top: var(--space-9);
   padding-top: var(--space-7);
-  border-top: 1px solid var(--divider);
   text-align: center;
 }
 .closing-text {
@@ -717,7 +940,6 @@ a.work-feature:focus-visible .work-feature-media img {
 /* ---------- Page hero (non-home pages) ---------- */
 .page-hero {
   padding-block: var(--space-8) var(--space-6);
-  border-bottom: 1px solid var(--divider);
 }
 .page-hero h1 {
   font-family: var(--font-display);
@@ -738,8 +960,8 @@ a.work-feature:focus-visible .work-feature-media img {
   position: relative;
   display: flex;
   align-items: center;
-  font-family: var(--font-body);
-  font-weight: 700;
+  font-family: var(--font-side-menu);
+  font-weight: 400;
   font-size: clamp(3rem, 7.5vw, 5.5rem);
   line-height: 0.9;
   letter-spacing: 0.005em;
@@ -784,8 +1006,21 @@ a.work-feature:focus-visible .work-feature-media img {
   left: 0;
   bottom: 0.06em;
   width: 100%;
-  height: 0.045em;
-  background: var(--accent);
+  height: 0.09em;
+  /* Same brush-stroke shape as .btn's underline (a single tapered stroke
+     stretched to fit, not the repeating tile used for full-width section
+     dividers — this is word-width, the same order of magnitude as a
+     button label, not a page-spanning divider). scaleX still drives the
+     reveal-on-hover animation same as before; masking and transform are
+     independent, so the wipe just exposes more of the brush shape instead
+     of a flat bar. */
+  background-color: var(--accent);
+  -webkit-mask-image: url('/img/brush-underline.svg');
+  mask-image: url('/img/brush-underline.svg');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.4s cubic-bezier(0.65, 0, 0.35, 1);
@@ -916,6 +1151,18 @@ a.work-feature:focus-visible .work-feature-media img {
   flex-direction: column;
   height: fit-content;
 }
+.side-menu-seal {
+  display: block;
+  width: var(--side-menu-seal-w);
+  aspect-ratio: 1;
+  margin-top: var(--space-3);
+}
+.side-menu-seal img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .side-menu-tagline {
   /* Kept on the mono font deliberately — this is a small tracked-out
      label, the same role DM Mono already plays elsewhere on the site
@@ -928,6 +1175,18 @@ a.work-feature:focus-visible .work-feature-media img {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
 }
+/* GrainOverlay and DitherBackground are both full-viewport fixed layers
+   sitting BEHIND the side menu's z-index, but the menu's own rail has no
+   opaque backing when closed (just the letters, transparent everywhere
+   else) — so without this, grain/dither texture showed through the gaps
+   around SHUM/the seal, cluttering what's meant to read as a clean,
+   static rail. Clipped to the closed rail's width; once the menu opens,
+   its sliding panel is fully opaque over that same width anyway, so
+   nothing further is needed there. */
+.bg-fx-clip-sidebar {
+  clip-path: inset(0 0 0 var(--side-menu-closed-w));
+}
+
 /* Page content gets pushed over by the menu's actual width, rather than
    the menu overlaying on top of unshifted content behind a dimming
    backdrop — see App.jsx's Layout. */
@@ -938,3 +1197,32 @@ a.work-feature:focus-visible .work-feature-media img {
 .side-menu-content--open {
   padding-left: var(--side-menu-open-w);
 }
+
+@media (max-width: 720px) {
+  .hero-mist {
+    height: 30vh;
+  }
+
+  .hero-title {
+    font-size: clamp(3.2rem, 16vw, 5.1rem);
+  }
+
+  .hero-tagline {
+    letter-spacing: 0.22em;
+    line-height: 1.5;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

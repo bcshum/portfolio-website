@@ -177,7 +177,7 @@ export default function GrainOverlay() {
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed inset-0 z-[-1] w-full h-full pointer-events-none ${
+      className={`fixed inset-0 z-[-1] w-full h-full pointer-events-none bg-fx-clip-sidebar ${
         theme === 'dark' ? 'mix-blend-screen' : 'mix-blend-multiply'
       }`}
     />

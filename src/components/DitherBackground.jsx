@@ -277,7 +277,7 @@ export default function DitherBackground() {
       // background color) — `screen` actually brightens instead, which is
       // what makes white read as bright white against dark. `multiply`
       // does the equivalent for black against the light background.
-      className={`fixed inset-0 z-[-2] pointer-events-none ${
+      className={`fixed inset-0 z-[-2] pointer-events-none bg-fx-clip-sidebar ${
         theme === 'dark' ? 'mix-blend-screen' : 'mix-blend-multiply'
       }`}
       style={{ opacity: theme === 'dark' ? OPACITY.dark : OPACITY.light }}

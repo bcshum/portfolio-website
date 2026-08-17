@@ -180,6 +180,16 @@ export default function SideMenu() {
           })}
         </nav>
 
+        {!open && (
+          <span
+            className="side-menu-seal self-start pointer-events-none"
+            aria-hidden="true"
+            style={{ marginLeft: `calc((var(--side-menu-closed-w) - var(--side-menu-seal-w)) / 2)` }}
+          >
+            <img src="/img/seal.png" alt="" />
+          </span>
+        )}
+
         <motion.span
           className="hidden md:block side-menu-tagline pointer-events-none mb-10 mt-auto"
           initial={false}

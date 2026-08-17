@@ -14,8 +14,10 @@ export default function About() {
 
       <Reveal as="section" className="section">
         <div className="container">
-          <ScrollBlurText as="p" className="section-lead">Cognitive Science × Interactive Arts & Technology.</ScrollBlurText>
-          <div className="section-body" style={{ maxWidth: '60ch' }}>
+          <ScrollBlurText as="p" className="section-lead about-lead">
+            Cognitive Science × Interactive Arts & Technology.
+          </ScrollBlurText>
+          <div className="section-body about-body">
             <ScrollBlurText as="p">
               I am a Cognitive Science and Interactive Arts and Technology student. I am
               an interaction and graphic designer who is passionate about the intersection

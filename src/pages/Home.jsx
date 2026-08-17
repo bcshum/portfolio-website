@@ -5,7 +5,6 @@ import Eyebrow from '../components/Eyebrow'
 import Marquee from '../components/Marquee'
 import CapabilityList from '../components/CapabilityList'
 import WorkFeature from '../components/WorkFeature'
-import HeroRipples from '../components/HeroRipples'
 import GooeyHeroTitle from '../components/GooeyHeroTitle'
 import ScrollBlurText from '../components/ScrollBlurText'
 
@@ -15,11 +14,16 @@ export default function Home() {
   return (
     <>
       <section className="hero">
-        <HeroRipples className="hero-canvas" />
+        <div className="hero-art" aria-hidden="true" />
+        <div className="hero-mist" aria-hidden="true">
+          <div className="hero-mist-band hero-mist-band--back" />
+          <div className="hero-mist-band hero-mist-band--mid" />
+          <div className="hero-mist-band hero-mist-band--front" />
+        </div>
 
         <div className="hero-content container">
           <span className="hero-eyebrow">Portfolio — 2026</span>
-          <GooeyHeroTitle text="Bryan Shum" className="hero-title" />
+          <GooeyHeroTitle text="Bryan Shum" altText="岑卓徽" className="hero-title" />
           <p className="hero-tagline">UX / UI Design Student</p>
           <div className="hero-actions">
             <TransitionLink to="/work" className="btn">View Work <span className="btn-arrow">→</span></TransitionLink>
@@ -87,3 +91,4 @@ export default function Home() {
     </>
   )
 }
+
